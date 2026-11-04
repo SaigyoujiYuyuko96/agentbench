@@ -1,0 +1,41 @@
+# A suite you can run today, against the mock agent in demo/.
+#
+#   cd backend
+#   python demo/mock_animepilot.py &          # in another shell
+#   agentbench run ../demo/suites/animepilot.yaml
+#
+# Swap `agent:` for your own endpoint and the rest of the file keeps working.
+
+agent:
+  type: http
+  endpoint: http://127.0.0.1:8003/api/agent/chat
+  request_body_template:
+    content: "{input}"
+  output_field: answer
+  trace_field: trace
+
+cases:
+  - id: frieren
+    title: 搜索葬送的芙莉莲
+    input: 帮我找葬送的芙莉莲
+    rules:
+      - keyword_contains: 芙莉莲
+
+  - id: natsume
+    title: 搜索夏目友人帐
+    input: 有没有类似夏目友人帐的动画
+    rules:
+      - keyword_contains: 夏目
+
+  - id: kyoani
+    title: 京阿尼代表作
+    input: 京阿尼有哪些代表作
+    rules:
+      - regex_match: 京阿尼|京都动画
+      - keyword_not_contains: 不知道
+
+  - id: mushishi
+    title: 虫师的评价
+    input: 虫师这部动画怎么样
+    rules:
+      - keyword_contains: 虫师
