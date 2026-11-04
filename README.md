@@ -106,6 +106,15 @@ PYTHONIOENCODING=utf-8 python demo/compare_agents.py
 
 `PYTHONIOENCODING=utf-8` 是 Windows 上必须的——脚本输出 emoji，GBK 控制台会 `UnicodeEncodeError`。
 
+### 4. 用命令行跑一遍（不需要数据库）
+
+```bash
+cd backend && pip install -e ".[dev]"
+agentbench run ../demo/suites/animepilot.yaml
+```
+
+它只要求被测 Agent 在跑（上面终端 2 那个 mock 就行），不碰 SQLite、不碰前端。输出是一段 markdown，失败时退出码为 1。
+
 ---
 
 ## 架构
@@ -265,6 +274,92 @@ AGENTBENCH_LLM_JUDGE_MODEL=deepseek-chat
 
 ---
 
+## 在 CI 里跑（命令行）
+
+Web 界面适合人看，流水线里需要的是「一条命令，失败就红」。`agentbench` 子命令做这件事：读一个 suite 文件，跑完所有用例，输出 markdown，用退出码表态。
+
+它住在 `backend/`，所以安装要么先进那个目录，要么用 `#subdirectory=backend`：
+
+```bash
+# 方式一：从源码装（本仓库里）
+cd backend && pip install -e .
+
+# 方式二：直接从 GitHub 装进隔离环境
+pipx install "git+https://github.com/SaigyoujiYuyuko96/agentbench#subdirectory=backend"
+
+# 然后，用你自己的 suite（下面会讲格式）
+agentbench run path/to/your-suite.yaml
+```
+
+仓库自带一个能立刻跑的：`cd backend && agentbench run ../demo/suites/animepilot.yaml`（需要 `demo/mock_animepilot.py` 在跑，见快速开始）。
+
+输出直接就是 markdown，粘进 PR 评论或 `$GITHUB_STEP_SUMMARY` 都能用：
+
+```markdown
+## AgentBench — animepilot
+
+**4/4 cases passed · average 5.0/5.0**
+
+| | Case | Score | Time | Agent output |
+|---|---|---|---|---|
+| PASS | frieren — 搜索葬送的芙莉莲 | 5.0 | 128ms | 《葬送的芙莉莲》…… |
+| FAIL | natsume — 搜索夏目友人帐 | 1.0 | 96ms | 抱歉，我没有找到相关作品。 |
+```
+
+标记用 `PASS` / `FAIL` 而不是 ✅ / ❌：Windows 的 GBK 控制台编不出那些符号，`print` 会抛 `UnicodeEncodeError`，退出码就从约定的 0/1/2 变成一屏 traceback。
+
+退出码：`0` 全过、`1` 有用例没过、`2` suite 文件本身有问题。第三种和第二种分开，是因为「你的 CI 配置写错了」和「你的 Agent 退化了」要分别处理。
+
+### suite 文件长什么样
+
+一个文件、两段：`agent` 描述怎么调用被测 Agent（就是 runner 的 config，原样透传），`cases` 是用例列表。
+
+```yaml
+agent:
+  type: http
+  endpoint: https://your-agent.example.com/chat
+  request_body_template:
+    content: "{input}"
+  output_field: answer
+  trace_field: trace
+
+cases:
+  - id: refund
+    title: 用户要求退款
+    input: 我要退货，订单 12345
+    rules:
+      - keyword_contains: 退货
+      - keyword_not_contains: 无法处理
+
+  - id: refund-policy
+    title: 退款政策细节
+    input: 退款几天到账
+    rules:
+      - regex_match: \d+\s*(个)?工作日
+```
+
+`id` 是报告里的行标识，必须唯一；`rules` 至少一条——没有规则的用例永远不会失败，那等于没测。
+
+### 接到 GitHub Actions
+
+仓库里的 [`.github/workflows/test.yml`](.github/workflows/test.yml) 有一个 `cli` job 就是这么做的：起一个 mock agent，跑 suite，把报告同时写进 Step Summary 和 artifact。它跑完之后还会故意跑一个必然失败的 suite，断言退出码确实是 `1`——否则「用例失败就该让流水线红」这句话没有任何东西在证明。
+
+```yaml
+- name: Run the suite
+  shell: bash        # 没有 pipefail，tee 会吞掉 agentbench 的退出码
+  working-directory: backend
+  run: |
+    agentbench run ../demo/suites/animepilot.yaml \
+      --report "$RUNNER_TEMP/report.md" \
+      | tee "$GITHUB_STEP_SUMMARY"
+```
+
+> `shell: bash` 那一行不是装饰。GitHub 在 Linux 上默认的 shell 是 `bash -e {0}`，**没有** `pipefail`，管道的退出码取自最后的 `tee`。写成 `shell: bash` 才会展开成 `bash --noprofile --norc -eo pipefail {0}`。
+
+`--report` 额外落一份文件（`upload-artifact` 用），`--quiet` 只打最后那行摘要（想自己拼输出时用）。
+
+---
+
 ## API
 
 17 个端点，都挂在 `/api`：
@@ -314,7 +409,7 @@ GET    /api/evaluations/run/{run_id} 某次运行的全部评分
 ## 测试
 
 ```bash
-cd backend && pytest -q          # 60 passed
+cd backend && pytest -q          # 93 passed
 cd frontend && npm test          # 8 passed
 cd frontend && npm run build     # vue-tsc + vite build
 ```
@@ -326,6 +421,7 @@ cd frontend && npm run build     # vue-tsc + vite build
 | `tests/unit/runners/` | 4 个文件 | 四种适配器的成功/失败/超时路径 |
 | `tests/unit/evaluators/` | 2 个文件 | 规则打分边界、LLM 响应三层解析兜底 |
 | `tests/unit/services/` | 4 个文件 | 用例 CRUD、配置 CRUD、运行编排、评分流程 |
+| `tests/unit/cli/` | 4 个文件 | suite 文件解析与其错误、逐用例编排、报告渲染、退出码 |
 | `tests/unit/utils/` | 1 个文件 | TraceCollector 的序列号、token 累加、耗时 |
 | `tests/integration/` | 3 个文件 | 三个路由组的端到端 |
 | `frontend/src/components/__tests__/` | 2 个文件 | TraceTimeline、ScoreCard 渲染 |
@@ -339,8 +435,9 @@ cd frontend && npm run build     # vue-tsc + vite build
 - **单用户，无鉴权。** 没有登录注册，接口谁都能调。设计文档的 YAGNI 一节写明这是 MVP 取舍。
 - **串行执行。** 一次只跑一个用例，没有并发压测，没有任务队列。
 - **没有版本对比 UI。** 数据模型支持同一用例跑多个配置（`test_runs` 里能存在多行），但前端目前只展示单次运行，没有「A 配置 vs B 配置」的并排页面。
-- **没有 CI 集成。** 不能作为 GitHub Action 在 PR 上自动跑评测。
-- **`langgraph` 和 `python_fn` 两种 runner 只能从代码里用。** 它们的 config 需要传 Python 对象，JSON 存不下，所以前端「新建 Agent 配置」页面对这两种类型实际上用不了。
+- **CLI 只做规则评分，不调 LLM Judge。** `agentbench run` 有意不依赖数据库和 LLM key——`app/cli/` 从 `app/runners/registry.py` 取 adapter 表，而那张表不导入 SQLAlchemy，所以一条 `agentbench run` 不会把 ORM 模型拉进来（有测试守着这条）。因此在 CI 里跑的成本是零；需要四维度评判时还是走 Web 界面。也因此**两边的历史不共享**：CLI 的结果只落在报告文件里，不写进 SQLite。
+- **没有打包成 GitHub Action。** 目前是「一个你能在任意 CI 里调用的命令行」，没有 `uses: SaigyoujiYuyuko96/agentbench@v1` 这种形态，也就没法自动往 PR 上粘评论。
+- **`langgraph` 和 `python_fn` 两种 runner 只能从代码里用。** 它们的 config 需要传 Python 对象，JSON 存不下，所以前端「新建 Agent 配置」页面对这两种类型实际上用不了。suite 文件同理，YAML 也表达不了 Python 对象。
 - **LLM Judge 的可靠性没有校准。** 没有人工标注集，没有和人类评分的一致性（Cohen's kappa）测量。这是已知的、也是最值得补的一块。
 - **SQLite。** 没有迁移（无 Alembic），表结构靠 `create_all`。
 - **中文界面。** 无 i18n。
@@ -353,14 +450,15 @@ cd frontend && npm run build     # vue-tsc + vite build
 agentbench/
 ├── backend/
 │   ├── app/
+│   │   ├── cli/             命令行：suite 解析、编排、报告
 │   │   ├── evaluators/      规则评分、LLM Judge
 │   │   ├── models/          5 张表的 SQLAlchemy 模型
 │   │   ├── routers/         4 组 API
-│   │   ├── runners/         4 种执行适配器
+│   │   ├── runners/         4 种执行适配器 + registry（不碰数据库的对照表）
 │   │   ├── schemas/         Pydantic 请求/响应
 │   │   ├── services/        业务编排
 │   │   └── utils/           TraceCollector
-│   └── tests/               60 个测试
+│   └── tests/               93 个测试
 ├── frontend/
 │   └── src/
 │       ├── api/             接口封装
@@ -370,11 +468,12 @@ agentbench/
 ├── demo/
 │   ├── mock_animepilot.py   假 Agent，离线可跑
 │   ├── benchmark_animepilot.py  单 Agent 跑一遍
-│   └── compare_agents.py    A/B 对比（核心演示）
+│   ├── compare_agents.py    A/B 对比（核心演示）
+│   └── suites/              可以直接跑的 suite 文件
 └── docs/superpowers/        设计文档与实现计划
 ```
 
-规模：后端 1384 行、测试 886 行、前端 1432 行。
+规模：后端 1384 行（不含新增的 CLI）、测试 886 行、前端 1432 行。
 
 ---
 
@@ -383,6 +482,8 @@ agentbench/
 **AgentBench is a regression-testing platform for AI agents.** Register test cases, run any agent against them, inspect the execution trace step by step, and score the results — either with deterministic keyword/regex rules or with an LLM-as-Judge across four dimensions (accuracy, hallucination, tool correctness, expression quality).
 
 The point is comparison. A single agent scoring 5.0 proves nothing; `demo/compare_agents.py` ships a deliberately degraded agent so you can see the platform actually separate 5.00 from 2.52 on the same test set.
+
+There is also a CLI for CI: `agentbench run suite.yaml` reads a small YAML file describing one agent and a list of cases, prints a markdown report, and exits non-zero when anything fails. It needs no database and no API key, so a pipeline can gate on it for free.
 
 Runs entirely on SQLite, needs no Docker, and the demo works offline with no API key.
 
