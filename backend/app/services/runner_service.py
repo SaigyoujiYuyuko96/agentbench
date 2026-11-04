@@ -8,17 +8,7 @@ from app.models.agent_config import AgentConfig
 from app.models.test_run import TestRun
 from app.models.run_step import RunStep
 from app.runners.base import RunResult
-from app.runners.openai_adapter import OpenAICompatibleRunner
-from app.runners.http_adapter import HTTPRunner
-from app.runners.python_fn_adapter import PythonFnRunner
-from app.runners.langgraph_adapter import LangGraphRunner
-
-ADAPTER_MAP = {
-    "openai_compatible": OpenAICompatibleRunner,
-    "http": HTTPRunner,
-    "python_fn": PythonFnRunner,
-    "langgraph": LangGraphRunner,
-}
+from app.runners.registry import ADAPTER_MAP
 
 class RunnerService:
     def __init__(self, session: AsyncSession):

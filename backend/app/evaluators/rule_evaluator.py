@@ -2,6 +2,23 @@ import re
 from dataclasses import dataclass
 from app.evaluators.base import BaseEvaluator, EvaluationResult
 
+# `RuleSpec.type` 允许取什么，这里说了算。命令行解析 suite 时 import 的是同一
+# 组常量，不在别处再抄一份，免得加了新规则而 YAML 那侧还拒收。
+KEYWORD_CONTAINS = "keyword_contains"
+KEYWORD_NOT_CONTAINS = "keyword_not_contains"
+REGEX_MATCH = "regex_match"
+
+RULE_TYPES = frozenset({KEYWORD_CONTAINS, KEYWORD_NOT_CONTAINS, REGEX_MATCH})
+
+# 规则名 → 判定函数。判定函数的第一个参数是规则值，第二个是被测文本。
+# 用查表而不是 if/elif 级联：规则集合和分派逻辑就不会各改各的、慢慢对不上。
+_RULE_CHECKS = {
+    KEYWORD_CONTAINS: lambda value, text: value in text,
+    KEYWORD_NOT_CONTAINS: lambda value, text: value not in text,
+    REGEX_MATCH: lambda value, text: bool(re.search(value, text)),
+}
+
+
 @dataclass
 class RuleSpec:
     type: str  # keyword_contains / keyword_not_contains / regex_match
@@ -49,10 +66,7 @@ class RuleEvaluator(BaseEvaluator):
         )
 
     def _check_rule(self, rule: RuleSpec, text: str) -> bool:
-        if rule.type == "keyword_contains":
-            return rule.value in text
-        elif rule.type == "keyword_not_contains":
-            return rule.value not in text
-        elif rule.type == "regex_match":
-            return bool(re.search(rule.value, text))
-        return False
+        check = _RULE_CHECKS.get(rule.type)
+        if check is None:
+            return False
+        return check(rule.value, text)
