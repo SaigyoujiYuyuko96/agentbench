@@ -51,6 +51,18 @@ AgentBench 把这套流程固化下来：
 
 差距能拉开，才说明评测在干活。这个对比不需要任何 LLM key，离线就能跑。
 
+## 截图
+
+运行详情页——一次运行的四步调用链（`http_call` 接 Agent 本身，加上 Agent 内部报上来的 `intent` / `retrieval` / `generation`），每步都有自己的耗时和输入输出：
+
+![运行详情](docs/screenshots/agentbench-4-run-detail.png)
+
+| 评测记录 | 测试用例 |
+|---|---|
+| ![评测记录](docs/screenshots/agentbench-1-runs.png) | ![用例](docs/screenshots/agentbench-2-cases.png) |
+
+![Agent 配置](docs/screenshots/agentbench-3-configs.png)
+
 ---
 
 ## 快速开始
