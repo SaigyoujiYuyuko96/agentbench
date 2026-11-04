@@ -42,3 +42,75 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+
+  # The CLI is the CI story: if this job cannot score a suite against a running
+  # agent, the claim that "you can use this from your pipeline" is untested.
+  cli:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Start the mock agent
+        run: |
+          PYTHONIOENCODING=utf-8 python ../demo/mock_animepilot.py &
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8003/api/system/health >/dev/null && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8003/api/system/health >/dev/null
+      - name: Run the suite
+        # `shell: bash` is not cosmetic: GitHub's unspecified shell on Linux is
+        # `bash -e {0}`, which has no pipefail, so the exit code of
+        # `agentbench run` would be swallowed by `tee` and a failing suite would
+        # leave the job green. `shell: bash` expands to
+        # `bash --noprofile --norc -eo pipefail {0}`.
+        shell: bash
+        run: |
+          PYTHONIOENCODING=utf-8 agentbench run ../demo/suites/animepilot.yaml \
+            --report "$RUNNER_TEMP/report.md" \
+            | tee "$GITHUB_STEP_SUMMARY"
+      - name: Prove the exit code still fails the build
+        # The whole CLI contract is 0/1/2. If this step ever goes green, the
+        # step above has stopped gating anything.
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/failing.yaml" <<'YAML'
+          agent:
+            type: http
+            endpoint: http://127.0.0.1:8003/api/agent/chat
+            request_body_template:
+              content: "{input}"
+            output_field: answer
+          cases:
+            - id: must-fail
+              title: 这条断言永远不会成立
+              input: 帮我找葬送的芙莉莲
+              rules:
+                - keyword_contains: a-string-the-mock-never-returns
+          YAML
+
+          set +e
+          PYTHONIOENCODING=utf-8 agentbench run "$RUNNER_TEMP/failing.yaml" --quiet
+          code=$?
+          set -e
+
+          if [ "$code" -ne 1 ]; then
+            echo "expected exit 1 for a failing suite, got $code"
+            exit 1
+          fi
+          echo "failing suite correctly exited 1"
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agentbench-report
+          path: ${{ runner.temp }}/report.md
