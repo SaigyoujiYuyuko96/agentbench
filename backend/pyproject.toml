@@ -20,7 +20,12 @@ dependencies = [
     "langgraph==0.2.34",
     "langchain-openai==0.2.2",
     "openai==1.51.0",
+    # Suite files are YAML; `agentbench run` reads them.
+    "pyyaml==6.0.3",
 ]
+
+[project.scripts]
+agentbench = "app.cli.main:main"
 
 [project.optional-dependencies]
 dev = [
