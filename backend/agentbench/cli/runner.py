@@ -5,6 +5,7 @@ web 那套把每次运行记进 SQLite 再通过 API 读回来；命令行不需
 只留在内存里。
 """
 
+import json
 import time
 from dataclasses import dataclass, field
 from typing import Callable
@@ -28,6 +29,23 @@ class RunOutcome:
     error: str | None = None
 
 
+def as_text(output) -> str:
+    """把 Agent 的答案变成能拿去评分的字符串。
+
+    `output_field` 指向的可能是任何 JSON 值 —— `{"answer": {"text": ...}}` 就
+    是一种常见写法。规则用 re.search 匹配字符串，遇到 dict 会 TypeErorr 抛在
+    评分那一步，连报告都写不出来。结构化答案转成 JSON 比 str() 好看：中文不
+    会被转义、键名带引号，报错时能看清到底是什么。
+    """
+    if isinstance(output, str):
+        return output
+    if output is None:
+        return ""
+    if isinstance(output, (dict, list)):
+        return json.dumps(output, ensure_ascii=False)
+    return str(output)
+
+
 async def run_suite(
     suite: Suite,
     *,
@@ -47,7 +65,7 @@ async def run_suite(
             case_id=case.id,
             title=case.title,
             input=case.input,
-            output=result.output,
+            output=as_text(result.output),
             duration_ms=duration_ms,
         )
 
@@ -60,7 +78,7 @@ async def run_suite(
             continue
 
         evaluation = RuleEvaluator(case.rules).evaluate(
-            agent_output=result.output,
+            agent_output=outcome.output,
             expected="",
             scoring_criteria="",
         )

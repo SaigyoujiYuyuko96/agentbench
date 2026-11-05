@@ -86,3 +86,17 @@ class TestRunSuite:
 
         assert outcome.passed is True, "not_contains passes on an empty answer"
         assert outcome.output == ""
+
+    async def test_a_structured_answer_is_scored_as_text_not_crashed_on(self):
+        # An HTTP agent is free to answer {"text": ..., "score": ...}. Today that
+        # raises TypeError inside re.search and no report gets written at all.
+        suite = _suite(_case("a", "first", ("keyword_contains", "alpha")))
+
+        class Structured(AgentRunner):
+            async def run(self, test_input):
+                return RunResult(output={"text": "alpha in a nested dict", "score": 0.9})
+
+        (outcome,) = await run_suite(suite, runner_factory=lambda cfg: Structured({}))
+
+        assert "alpha" in outcome.output
+        assert outcome.passed is True
