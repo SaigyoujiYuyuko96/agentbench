@@ -1,11 +1,11 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from app.runners.openai_adapter import OpenAICompatibleRunner
-from app.runners.http_adapter import HTTPRunner
-from app.runners.python_fn_adapter import PythonFnRunner
-from app.models.test_case import TestCase
-from app.models.agent_config import AgentConfig
-from app.services.runner_service import RunnerService
+from agentbench.runners.openai_adapter import OpenAICompatibleRunner
+from agentbench.runners.http_adapter import HTTPRunner
+from agentbench.runners.python_fn_adapter import PythonFnRunner
+from agentbench.models.test_case import TestCase
+from agentbench.models.agent_config import AgentConfig
+from agentbench.services.runner_service import RunnerService
 
 class TestRunnerService:
     @pytest.mark.asyncio

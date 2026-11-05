@@ -1,5 +1,5 @@
 import pytest
-from app.schemas.test_case import TestCaseCreate
+from agentbench.schemas.test_case import TestCaseCreate
 
 class TestTestCaseAPI:
     @pytest.mark.asyncio

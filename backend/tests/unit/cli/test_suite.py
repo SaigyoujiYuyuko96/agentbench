@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from app.cli.suite import SuiteFileError, load_suite
+from agentbench.cli.suite import SuiteFileError, load_suite
 
 
 SUITE_TEXT = """
@@ -104,11 +104,11 @@ class TestLoadSuite:
 class TestStaysOffTheDatabase:
     def test_importing_the_cli_does_not_pull_in_sqlalchemy(self):
         # The README promises the CLI needs no database. Importing ADAPTER_MAP
-        # from app.services.runner_service would drag SQLAlchemy and every ORM
+        # from agentbench.services.runner_service would drag SQLAlchemy and every ORM
         # model in with it, making that promise false.
         probe = (
-            "import sys, app.cli.main; "
-            "heavy = [m for m in ('sqlalchemy', 'aiosqlite', 'app.database') "
+            "import sys, agentbench.cli.main; "
+            "heavy = [m for m in ('sqlalchemy', 'aiosqlite', 'agentbench.database') "
             "if m in sys.modules]; "
             "print(heavy)"
         )

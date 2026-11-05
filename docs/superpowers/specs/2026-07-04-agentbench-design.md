@@ -212,7 +212,7 @@ EvaluationResult 1──0..1 HumanReview  (v1)
 
 ```
 backend/
-├── app/
+├── agentbench/
 │   ├── main.py                    # FastAPI 入口
 │   ├── config.py                  # 配置管理（环境变量/Pydantic Settings）
 │   ├── database.py                 # SQLAlchemy 引擎与 session

@@ -1,5 +1,5 @@
 import pytest
-from app.evaluators.rule_evaluator import RuleEvaluator, RuleSpec
+from agentbench.evaluators.rule_evaluator import RuleEvaluator, RuleSpec
 
 class TestRuleEvaluator:
     def test_keyword_contains_pass(self):

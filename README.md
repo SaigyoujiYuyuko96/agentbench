@@ -74,7 +74,7 @@ AgentBench 把这套流程固化下来：
 ```bash
 cd backend
 pip install -e ".[dev]"
-uvicorn app.main:app --port 8090
+uvicorn agentbench.main:app --port 8090
 ```
 
 打开 http://127.0.0.1:8090/docs 能看接口文档。数据库是 SQLite，首次启动自动建表，不需要装 PostgreSQL。
@@ -95,7 +95,7 @@ npm run dev
 
 ```bash
 # 终端 1：后端
-cd backend && uvicorn app.main:app --port 8090
+cd backend && uvicorn agentbench.main:app --port 8090
 
 # 终端 2：mock Agent（监听 8003）
 python demo/mock_animepilot.py
@@ -146,7 +146,7 @@ agentbench run ../demo/suites/animepilot.yaml
 
 ## 数据模型
 
-五张表，都在 `backend/app/models/`：
+五张表，都在 `backend/agentbench/models/`：
 
 | 表 | 作用 | 关键字段 |
 |---|---|---|
@@ -162,7 +162,7 @@ agentbench run ../demo/suites/animepilot.yaml
 
 ## 四种 Runner
 
-所有 Runner 继承 `app/runners/base.py` 的 `AgentRunner`，实现一个 `run(test_input) -> RunResult`，把过程写进 `TraceCollector`。
+所有 Runner 继承 `agentbench/runners/base.py` 的 `AgentRunner`，实现一个 `run(test_input) -> RunResult`，把过程写进 `TraceCollector`。
 
 ### `http` —— 接任意 HTTP Agent
 
@@ -209,7 +209,7 @@ agentbench run ../demo/suites/animepilot.yaml
 函数可以有 `step_collector` 参数，配合 `@trace_step` 装饰器把内部步骤记进 trace：
 
 ```python
-from app.runners.python_fn_adapter import trace_step
+from agentbench.runners.python_fn_adapter import trace_step
 
 @trace_step(step_type="retrieval", name="向量检索")
 async def retrieve(query: str) -> list[str]:
@@ -219,11 +219,11 @@ async def retrieve(query: str) -> list[str]:
 ### 写自己的 Runner
 
 ```python
-from app.runners.base import AgentRunner, RunResult
+from agentbench.runners.base import AgentRunner, RunResult
 
 class MyRunner(AgentRunner):
     async def run(self, test_input: str) -> RunResult:
-        from app.utils.trace_collector import TraceCollector
+        from agentbench.utils.trace_collector import TraceCollector
         collector = TraceCollector()
 
         with collector.step(step_type="my_step", name="调用我的 Agent"):
@@ -232,7 +232,7 @@ class MyRunner(AgentRunner):
         return RunResult(output=output, collector=collector)
 ```
 
-然后在 `app/services/runner_service.py` 的 `ADAPTER_MAP` 里注册。记得同步改 `app/schemas/agent_config.py` 里的 `agent_type` 正则。
+然后在 `agentbench/services/runner_service.py` 的 `ADAPTER_MAP` 里注册。记得同步改 `agentbench/schemas/agent_config.py` 里的 `agent_type` 正则。
 
 ---
 
@@ -435,7 +435,7 @@ cd frontend && npm run build     # vue-tsc + vite build
 - **单用户，无鉴权。** 没有登录注册，接口谁都能调。设计文档的 YAGNI 一节写明这是 MVP 取舍。
 - **串行执行。** 一次只跑一个用例，没有并发压测，没有任务队列。
 - **没有版本对比 UI。** 数据模型支持同一用例跑多个配置（`test_runs` 里能存在多行），但前端目前只展示单次运行，没有「A 配置 vs B 配置」的并排页面。
-- **CLI 只做规则评分，不调 LLM Judge。** `agentbench run` 有意不依赖数据库和 LLM key——`app/cli/` 从 `app/runners/registry.py` 取 adapter 表，而那张表不导入 SQLAlchemy，所以一条 `agentbench run` 不会把 ORM 模型拉进来（有测试守着这条）。因此在 CI 里跑的成本是零；需要四维度评判时还是走 Web 界面。也因此**两边的历史不共享**：CLI 的结果只落在报告文件里，不写进 SQLite。
+- **CLI 只做规则评分，不调 LLM Judge。** `agentbench run` 有意不依赖数据库和 LLM key——`agentbench/cli/` 从 `agentbench/runners/registry.py` 取 adapter 表，而那张表不导入 SQLAlchemy，所以一条 `agentbench run` 不会把 ORM 模型拉进来（有测试守着这条）。因此在 CI 里跑的成本是零；需要四维度评判时还是走 Web 界面。也因此**两边的历史不共享**：CLI 的结果只落在报告文件里，不写进 SQLite。
 - **没有打包成 GitHub Action。** 目前是「一个你能在任意 CI 里调用的命令行」，没有 `uses: SaigyoujiYuyuko96/agentbench@v1` 这种形态，也就没法自动往 PR 上粘评论。
 - **`langgraph` 和 `python_fn` 两种 runner 只能从代码里用。** 它们的 config 需要传 Python 对象，JSON 存不下，所以前端「新建 Agent 配置」页面对这两种类型实际上用不了。suite 文件同理，YAML 也表达不了 Python 对象。
 - **LLM Judge 的可靠性没有校准。** 没有人工标注集，没有和人类评分的一致性（Cohen's kappa）测量。这是已知的、也是最值得补的一块。
@@ -449,7 +449,7 @@ cd frontend && npm run build     # vue-tsc + vite build
 ```
 agentbench/
 ├── backend/
-│   ├── app/
+│   ├── agentbench/
 │   │   ├── cli/             命令行：suite 解析、编排、报告
 │   │   ├── evaluators/      规则评分、LLM Judge
 │   │   ├── models/          5 张表的 SQLAlchemy 模型

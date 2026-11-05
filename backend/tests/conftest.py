@@ -1,8 +1,8 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from app.database import Base, get_session
-from app.main import app
+from agentbench.database import Base, get_session
+from agentbench.main import app
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test_agentbench.db"
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)

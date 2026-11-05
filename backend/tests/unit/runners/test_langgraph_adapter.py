@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from app.runners.langgraph_adapter import LangGraphRunner
+from agentbench.runners.langgraph_adapter import LangGraphRunner
 
 class TestLangGraphRunner:
     @pytest.mark.asyncio

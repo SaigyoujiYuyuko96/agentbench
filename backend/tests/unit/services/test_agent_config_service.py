@@ -1,6 +1,6 @@
 import pytest
-from app.schemas.agent_config import AgentConfigCreate, AgentConfigUpdate
-from app.services.agent_config_service import AgentConfigService
+from agentbench.schemas.agent_config import AgentConfigCreate, AgentConfigUpdate
+from agentbench.services.agent_config_service import AgentConfigService
 
 class TestAgentConfigService:
     @pytest.mark.asyncio

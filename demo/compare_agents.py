@@ -8,7 +8,7 @@
     如果两个 Agent 分数拉不开差距，说明规则设计得不对；拉得开，说明平台在干活。
 
 用法：
-    1. 先起后端：  cd backend && uvicorn app.main:app --port 8090
+    1. 先起后端：  cd backend && uvicorn agentbench.main:app --port 8090
     2. 再起 mock：  python demo/mock_animepilot.py          # 监听 8003
     3. 跑本脚本：  PYTHONIOENCODING=utf-8 python demo/compare_agents.py
 """

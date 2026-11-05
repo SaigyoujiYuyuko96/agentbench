@@ -1,7 +1,7 @@
 import pytest
-from app.models.test_case import TestCase
-from app.schemas.test_case import TestCaseCreate, TestCaseUpdate
-from app.services.test_case_service import TestCaseService
+from agentbench.models.test_case import TestCase
+from agentbench.schemas.test_case import TestCaseCreate, TestCaseUpdate
+from agentbench.services.test_case_service import TestCaseService
 
 class TestTestCaseService:
     @pytest.mark.asyncio

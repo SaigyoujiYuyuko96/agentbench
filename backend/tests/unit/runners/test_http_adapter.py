@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from app.runners.http_adapter import HTTPRunner
+from agentbench.runners.http_adapter import HTTPRunner
 
 class TestHTTPRunner:
     @pytest.mark.asyncio
@@ -21,7 +21,7 @@ class TestHTTPRunner:
         mock_response.json.return_value = mock_response_data
         mock_response.raise_for_status.return_value = None
 
-        with patch("app.runners.http_adapter.httpx.AsyncClient") as mock_cls:
+        with patch("agentbench.runners.http_adapter.httpx.AsyncClient") as mock_cls:
             mock_request = AsyncMock(return_value=mock_response)
             mock_instance = AsyncMock()
             mock_instance.request = mock_request
@@ -39,7 +39,7 @@ class TestHTTPRunner:
     async def test_run_handles_connection_error(self):
         runner = HTTPRunner({"endpoint": "http://localhost:9999/chat"})
 
-        with patch("app.runners.http_adapter.httpx.AsyncClient") as mock_cls:
+        with patch("agentbench.runners.http_adapter.httpx.AsyncClient") as mock_cls:
             mock_instance = AsyncMock()
             mock_instance.request = AsyncMock(side_effect=Exception("Connection refused"))
             mock_instance.__aenter__ = AsyncMock(return_value=mock_instance)

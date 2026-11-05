@@ -1,13 +1,13 @@
 import pytest
-from app.services.evaluation_service import EvaluationService
-from app.evaluators.rule_evaluator import RuleSpec
+from agentbench.services.evaluation_service import EvaluationService
+from agentbench.evaluators.rule_evaluator import RuleSpec
 
 class TestEvaluationService:
     @pytest.mark.asyncio
     async def test_evaluate_with_rules(self, db_session):
-        from app.models.test_case import TestCase
-        from app.models.agent_config import AgentConfig
-        from app.models.test_run import TestRun
+        from agentbench.models.test_case import TestCase
+        from agentbench.models.agent_config import AgentConfig
+        from agentbench.models.test_run import TestRun
 
         tc = TestCase(title="t", input_text="hi", expected_behavior="hello", scoring_criteria="", tags="[]")
         ac = AgentConfig(name="ac", agent_type="http", config="{}")
@@ -27,9 +27,9 @@ class TestEvaluationService:
 
     @pytest.mark.asyncio
     async def test_evaluate_without_rules_no_llm(self, db_session):
-        from app.models.test_case import TestCase
-        from app.models.agent_config import AgentConfig
-        from app.models.test_run import TestRun
+        from agentbench.models.test_case import TestCase
+        from agentbench.models.agent_config import AgentConfig
+        from agentbench.models.test_run import TestRun
 
         tc = TestCase(title="t2", input_text="hi", expected_behavior="hello", scoring_criteria="", tags="[]")
         ac = AgentConfig(name="ac2", agent_type="http", config="{}")

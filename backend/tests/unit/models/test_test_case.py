@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime
-from app.models.test_case import TestCase
+from agentbench.models.test_case import TestCase
 
 class TestTestCaseModel:
     @pytest.mark.asyncio

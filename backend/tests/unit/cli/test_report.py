@@ -1,5 +1,5 @@
-from app.cli.report import render_markdown, summarize
-from app.cli.runner import RunOutcome
+from agentbench.cli.report import render_markdown, summarize
+from agentbench.cli.runner import RunOutcome
 
 
 def _outcome(case_id, score, passed, output="some answer", error=None):

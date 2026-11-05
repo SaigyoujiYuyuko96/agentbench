@@ -92,7 +92,7 @@ settings = Settings()
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
-from app.config import settings
+from agentbench.config import settings
 
 engine = create_async_engine(settings.database_url, echo=False)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -120,7 +120,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.database import init_db
+from agentbench.database import init_db
 
 
 @asynccontextmanager
@@ -150,8 +150,8 @@ async def health():
 import pytest
 from httpx import AsyncClient, ASGITransport
 
-from app.database import async_session, engine, Base, get_session
-from app.main import app
+from agentbench.database import async_session, engine, Base, get_session
+from agentbench.main import app
 
 
 @pytest.fixture
@@ -183,7 +183,7 @@ cd "D:\ai work\AgentBench\backend"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+python -m uvicorn agentbench.main:app --host 0.0.0.0 --port 8000
 ```
 
 Expected: 服务启动在 8000 端口，`GET /health` 返回 `{"status": "ok"}`
@@ -223,7 +223,7 @@ git commit -m "chore: scaffold backend project with FastAPI, SQLAlchemy, Pytest"
 import pytest
 from datetime import datetime
 
-from app.models.test_case import TestCase
+from agentbench.models.test_case import TestCase
 
 
 @pytest.fixture
@@ -278,8 +278,8 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 
-from app.database import Base, get_session
-from app.main import app
+from agentbench.database import Base, get_session
+from agentbench.main import app
 
 # 测试用内存数据库
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test_agentbench.db"
@@ -332,7 +332,7 @@ from datetime import datetime
 from sqlalchemy import Integer, String, Text, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from agentbench.database import Base
 
 
 class TestCase(Base):
@@ -432,9 +432,9 @@ git commit -m "feat: add TestCase model and schemas"
 # D:\ai work\AgentBench\backend\tests\unit\services\test_test_case_service.py
 import pytest
 
-from app.models.test_case import TestCase
-from app.schemas.test_case import TestCaseCreate, TestCaseUpdate
-from app.services.test_case_service import TestCaseService
+from agentbench.models.test_case import TestCase
+from agentbench.schemas.test_case import TestCaseCreate, TestCaseUpdate
+from agentbench.services.test_case_service import TestCaseService
 
 
 class TestTestCaseService:
@@ -526,8 +526,8 @@ import json
 from sqlalchemy import select, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.test_case import TestCase
-from app.schemas.test_case import TestCaseCreate, TestCaseUpdate
+from agentbench.models.test_case import TestCase
+from agentbench.schemas.test_case import TestCaseCreate, TestCaseUpdate
 
 
 class TestCaseService:
@@ -618,7 +618,7 @@ Expected: 6 passed
 # D:\ai work\AgentBench\backend\tests\integration\test_test_cases_api.py
 import pytest
 
-from app.schemas.test_case import TestCaseCreate
+from agentbench.schemas.test_case import TestCaseCreate
 
 
 class TestTestCaseAPI:
@@ -702,11 +702,11 @@ import json
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_session
-from app.schemas.test_case import (
+from agentbench.database import get_session
+from agentbench.schemas.test_case import (
     TestCaseCreate, TestCaseUpdate, TestCaseResponse,
 )
-from app.services.test_case_service import TestCaseService
+from agentbench.services.test_case_service import TestCaseService
 
 router = APIRouter(prefix="/api/test-cases", tags=["test-cases"])
 
@@ -797,8 +797,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.database import init_db
-from app.routers import test_cases
+from agentbench.database import init_db
+from agentbench.routers import test_cases
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -850,8 +850,8 @@ git commit -m "feat: add TestCase CRUD API with service layer and tests"
 ```python
 # D:\ai work\AgentBench\backend\tests\unit\services\test_agent_config_service.py
 import pytest
-from app.schemas.agent_config import AgentConfigCreate
-from app.services.agent_config_service import AgentConfigService
+from agentbench.schemas.agent_config import AgentConfigCreate
+from agentbench.services.agent_config_service import AgentConfigService
 
 
 class TestAgentConfigService:
@@ -912,7 +912,7 @@ from datetime import datetime
 from sqlalchemy import Integer, String, Text, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from agentbench.database import Base
 
 
 class AgentConfig(Base):
@@ -967,8 +967,8 @@ import json
 from sqlalchemy import select, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.agent_config import AgentConfig
-from app.schemas.agent_config import AgentConfigCreate, AgentConfigUpdate
+from agentbench.models.agent_config import AgentConfig
+from agentbench.schemas.agent_config import AgentConfigCreate, AgentConfigUpdate
 
 
 class AgentConfigService:
@@ -1029,11 +1029,11 @@ import json
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_session
-from app.schemas.agent_config import (
+from agentbench.database import get_session
+from agentbench.schemas.agent_config import (
     AgentConfigCreate, AgentConfigUpdate, AgentConfigResponse,
 )
-from app.services.agent_config_service import AgentConfigService
+from agentbench.services.agent_config_service import AgentConfigService
 
 router = APIRouter(prefix="/api/agent-configs", tags=["agent-configs"])
 
@@ -1109,7 +1109,7 @@ async def delete_agent_config(
 
 ```python
 # 在 main.py 中追加
-from app.routers import agent_configs
+from agentbench.routers import agent_configs
 app.include_router(agent_configs.router)
 ```
 
@@ -1181,9 +1181,9 @@ git commit -m "feat: add AgentConfig CRUD API with service layer and tests"
 # D:\ai work\AgentBench\backend\tests\unit\models\test_test_run.py
 import pytest
 
-from app.models.test_run import TestRun
-from app.models.run_step import RunStep
-from app.models.evaluation_result import EvaluationResult
+from agentbench.models.test_run import TestRun
+from agentbench.models.run_step import RunStep
+from agentbench.models.evaluation_result import EvaluationResult
 
 
 class TestTestRunModel:
@@ -1254,7 +1254,7 @@ from datetime import datetime
 from sqlalchemy import Integer, String, Float, Text, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from agentbench.database import Base
 
 
 class TestRun(Base):
@@ -1277,7 +1277,7 @@ class TestRun(Base):
 from sqlalchemy import Integer, String, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from agentbench.database import Base
 
 
 class RunStep(Base):
@@ -1304,7 +1304,7 @@ from datetime import datetime
 from sqlalchemy import Integer, String, Float, Text, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
+from agentbench.database import Base
 
 
 class EvaluationResult(Base):
@@ -1404,7 +1404,7 @@ git commit -m "feat: add TestRun, RunStep, EvaluationResult models and schemas"
 ---
 
 **Phase 1 完成检查点：**
-- [ ] `uvicorn app.main:app` 可启动，`/health` 返回 200
+- [ ] `uvicorn agentbench.main:app` 可启动，`/health` 返回 200
 - [ ] `POST /api/test-cases/` 可创建测试用例
 - [ ] `GET /api/test-cases/` 可列表（含筛选）
 - [ ] `POST /api/agent-configs/` 可创建 Agent 配置
@@ -1432,7 +1432,7 @@ git commit -m "feat: add TestRun, RunStep, EvaluationResult models and schemas"
 # D:\ai work\AgentBench\backend\tests\unit\utils\test_trace_collector.py
 import pytest
 import time
-from app.utils.trace_collector import TraceCollector
+from agentbench.utils.trace_collector import TraceCollector
 
 
 class TestTraceCollector:
@@ -1597,7 +1597,7 @@ git commit -m "feat: add TraceCollector for unified trace recording"
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from app.utils.trace_collector import TraceCollector
+from agentbench.utils.trace_collector import TraceCollector
 
 
 @dataclass
@@ -1645,7 +1645,7 @@ git commit -m "feat: add AgentRunner abstract base class and RunResult dataclass
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from app.runners.openai_adapter import OpenAICompatibleRunner
+from agentbench.runners.openai_adapter import OpenAICompatibleRunner
 
 
 class TestOpenAICompatibleRunner:
@@ -1662,7 +1662,7 @@ class TestOpenAICompatibleRunner:
             "usage": {"prompt_tokens": 50, "completion_tokens": 100, "total_tokens": 150},
         }
 
-        with patch("app.runners.openai_adapter.httpx.AsyncClient") as mock_client_cls:
+        with patch("agentbench.runners.openai_adapter.httpx.AsyncClient") as mock_client_cls:
             mock_post = AsyncMock()
             mock_post.return_value = type("R", (), {"json": lambda: mock_response, "raise_for_status": lambda: None})()
             mock_client_instance = AsyncMock()
@@ -1689,7 +1689,7 @@ class TestOpenAICompatibleRunner:
             "api_key": "test-key",
         })
 
-        with patch("app.runners.openai_adapter.httpx.AsyncClient") as mock_client_cls:
+        with patch("agentbench.runners.openai_adapter.httpx.AsyncClient") as mock_client_cls:
             mock_post = AsyncMock()
             mock_post.return_value = type("R", (), {
                 "raise_for_status": lambda: (_ for _ in ()).throw(Exception("API Error")),
@@ -1715,7 +1715,7 @@ class TestOpenAICompatibleRunner:
 # D:\ai work\AgentBench\backend\app\runners\openai_adapter.py
 import httpx
 
-from app.runners.base import AgentRunner, RunResult
+from agentbench.runners.base import AgentRunner, RunResult
 
 
 class OpenAICompatibleRunner(AgentRunner):
@@ -1762,7 +1762,7 @@ class OpenAICompatibleRunner(AgentRunner):
             return RunResult(output="", collector=collector, error=str(e))
 
     def _new_collector(self):
-        from app.utils.trace_collector import TraceCollector
+        from agentbench.utils.trace_collector import TraceCollector
         return TraceCollector()
 ```
 
@@ -1792,7 +1792,7 @@ git commit -m "feat: add OpenAI Compatible adapter with trace recording"
 import pytest
 from unittest.mock import AsyncMock, patch
 
-from app.runners.http_adapter import HTTPRunner
+from agentbench.runners.http_adapter import HTTPRunner
 
 
 class TestHTTPRunner:
@@ -1810,7 +1810,7 @@ class TestHTTPRunner:
             ],
         }
 
-        with patch("app.runners.http_adapter.httpx.AsyncClient") as mock_cls:
+        with patch("agentbench.runners.http_adapter.httpx.AsyncClient") as mock_cls:
             mock_post = AsyncMock()
             mock_post.return_value = type("R", (), {"json": lambda: mock_response_data, "raise_for_status": lambda: None})()
             mock_instance = AsyncMock()
@@ -1829,7 +1829,7 @@ class TestHTTPRunner:
     async def test_run_handles_connection_error(self):
         runner = HTTPRunner({"endpoint": "http://localhost:9999/chat"})
 
-        with patch("app.runners.http_adapter.httpx.AsyncClient") as mock_cls:
+        with patch("agentbench.runners.http_adapter.httpx.AsyncClient") as mock_cls:
             mock_instance = AsyncMock()
             mock_instance.post = AsyncMock(side_effect=Exception("Connection refused"))
             mock_instance.__aenter__ = AsyncMock(return_value=mock_instance)
@@ -1847,14 +1847,14 @@ class TestHTTPRunner:
 # D:\ai work\AgentBench\backend\app\runners\http_adapter.py
 import httpx
 
-from app.runners.base import AgentRunner, RunResult
+from agentbench.runners.base import AgentRunner, RunResult
 
 
 class HTTPRunner(AgentRunner):
     """通过 HTTP 端点调用自定义 Agent。约定响应格式：{"output": str, "trace": list[dict]}。"""
 
     async def run(self, test_input: str) -> RunResult:
-        from app.utils.trace_collector import TraceCollector
+        from agentbench.utils.trace_collector import TraceCollector
         collector = TraceCollector()
 
         endpoint = self.config.get("endpoint", "")
@@ -1919,7 +1919,7 @@ git commit -m "feat: add HTTP adapter for custom Agent endpoints"
 ```python
 # D:\ai work\AgentBench\backend\tests\unit\runners\test_python_fn_adapter.py
 import pytest
-from app.runners.python_fn_adapter import PythonFnRunner
+from agentbench.runners.python_fn_adapter import PythonFnRunner
 
 
 class TestPythonFnRunner:
@@ -1935,7 +1935,7 @@ class TestPythonFnRunner:
 
     @pytest.mark.asyncio
     async def test_run_function_with_trace_decorator(self):
-        from app.runners.python_fn_adapter import trace_step
+        from agentbench.runners.python_fn_adapter import trace_step
 
         @trace_step(step_type="intent_detection", name="MyDetector")
         async def detect_intent(query: str) -> str:
@@ -1966,14 +1966,14 @@ class TestPythonFnRunner:
 # D:\ai work\AgentBench\backend\app\runners\python_fn_adapter.py
 import inspect
 import functools
-from app.runners.base import AgentRunner, RunResult
+from agentbench.runners.base import AgentRunner, RunResult
 
 
 class PythonFnRunner(AgentRunner):
     """直接调用 Python async 函数。通过 @trace_step 装饰器收集 trace。"""
 
     async def run(self, test_input: str) -> RunResult:
-        from app.utils.trace_collector import TraceCollector
+        from agentbench.utils.trace_collector import TraceCollector
         collector = TraceCollector()
 
         fn = self.config.get("function")
@@ -2045,7 +2045,7 @@ git commit -m "feat: add Python Function adapter with trace_step decorator"
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.runners.langgraph_adapter import LangGraphRunner
+from agentbench.runners.langgraph_adapter import LangGraphRunner
 
 
 class TestLangGraphRunner:
@@ -2076,14 +2076,14 @@ class TestLangGraphRunner:
 
 ```python
 # D:\ai work\AgentBench\backend\app\runners\langgraph_adapter.py
-from app.runners.base import AgentRunner, RunResult
+from agentbench.runners.base import AgentRunner, RunResult
 
 
 class LangGraphRunner(AgentRunner):
     """执行编译后的 LangGraph workflow。config 中需传入 'graph' 键对应的编译图。"""
 
     async def run(self, test_input: str) -> RunResult:
-        from app.utils.trace_collector import TraceCollector
+        from agentbench.utils.trace_collector import TraceCollector
         collector = TraceCollector()
 
         graph = self.config.get("graph")
@@ -2140,14 +2140,14 @@ git commit -m "feat: add LangGraph adapter with graph execution trace"
 # D:\ai work\AgentBench\backend\tests\unit\services\test_runner_service.py
 import pytest
 from unittest.mock import AsyncMock, patch
-from app.runners.openai_adapter import OpenAICompatibleRunner
-from app.runners.http_adapter import HTTPRunner
-from app.runners.python_fn_adapter import PythonFnRunner
-from app.models.test_case import TestCase
-from app.models.agent_config import AgentConfig
-from app.models.test_run import TestRun
-from app.models.run_step import RunStep
-from app.services.runner_service import RunnerService
+from agentbench.runners.openai_adapter import OpenAICompatibleRunner
+from agentbench.runners.http_adapter import HTTPRunner
+from agentbench.runners.python_fn_adapter import PythonFnRunner
+from agentbench.models.test_case import TestCase
+from agentbench.models.agent_config import AgentConfig
+from agentbench.models.test_run import TestRun
+from agentbench.models.run_step import RunStep
+from agentbench.services.runner_service import RunnerService
 
 
 class TestRunnerService:
@@ -2189,15 +2189,15 @@ import time
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.test_case import TestCase
-from app.models.agent_config import AgentConfig
-from app.models.test_run import TestRun
-from app.models.run_step import RunStep
-from app.runners.base import RunResult
-from app.runners.openai_adapter import OpenAICompatibleRunner
-from app.runners.http_adapter import HTTPRunner
-from app.runners.python_fn_adapter import PythonFnRunner
-from app.runners.langgraph_adapter import LangGraphRunner
+from agentbench.models.test_case import TestCase
+from agentbench.models.agent_config import AgentConfig
+from agentbench.models.test_run import TestRun
+from agentbench.models.run_step import RunStep
+from agentbench.runners.base import RunResult
+from agentbench.runners.openai_adapter import OpenAICompatibleRunner
+from agentbench.runners.http_adapter import HTTPRunner
+from agentbench.runners.python_fn_adapter import PythonFnRunner
+from agentbench.runners.langgraph_adapter import LangGraphRunner
 
 
 ADAPTER_MAP = {
@@ -2278,12 +2278,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_session
-from app.models.test_run import TestRun
-from app.models.run_step import RunStep
-from app.schemas.test_run import TestRunResponse
-from app.schemas.run_step import RunStepResponse
-from app.services.runner_service import RunnerService
+from agentbench.database import get_session
+from agentbench.models.test_run import TestRun
+from agentbench.models.run_step import RunStep
+from agentbench.schemas.test_run import TestRunResponse
+from agentbench.schemas.run_step import RunStepResponse
+from agentbench.services.runner_service import RunnerService
 
 router = APIRouter(prefix="/api/test-runs", tags=["test-runs"])
 
@@ -2360,7 +2360,7 @@ async def get_run_steps(
 更新 `main.py`：
 
 ```python
-from app.routers import test_runs
+from agentbench.routers import test_runs
 app.include_router(test_runs.router)
 ```
 
@@ -2402,7 +2402,7 @@ git commit -m "feat: add RunnerService and test run API with trace persistence"
 ```python
 # D:\ai work\AgentBench\backend\tests\unit\evaluators\test_rule_evaluator.py
 import pytest
-from app.evaluators.rule_evaluator import RuleEvaluator, RuleSpec
+from agentbench.evaluators.rule_evaluator import RuleEvaluator, RuleSpec
 
 
 class TestRuleEvaluator:
@@ -2517,7 +2517,7 @@ class BaseEvaluator:
 import re
 from dataclasses import dataclass
 
-from app.evaluators.base import BaseEvaluator, EvaluationResult
+from agentbench.evaluators.base import BaseEvaluator, EvaluationResult
 
 
 @dataclass
@@ -2602,7 +2602,7 @@ import pytest
 import json
 from unittest.mock import AsyncMock, patch
 
-from app.evaluators.llm_judge_evaluator import LLMJudgeEvaluator
+from agentbench.evaluators.llm_judge_evaluator import LLMJudgeEvaluator
 
 
 FAKE_JUDGE_RESPONSE = json.dumps({
@@ -2623,7 +2623,7 @@ class TestLLMJudgeEvaluator:
             model="gpt-4.1",
         )
 
-        with patch("app.evaluators.llm_judge_evaluator.httpx.AsyncClient") as mock_cls:
+        with patch("agentbench.evaluators.llm_judge_evaluator.httpx.AsyncClient") as mock_cls:
             mock_post = AsyncMock()
             mock_post.return_value = type("R", (), {
                 "json": lambda: {
@@ -2655,7 +2655,7 @@ class TestLLMJudgeEvaluator:
             base_url="http://fake", api_key="test", model="gpt-4.1",
         )
 
-        with patch("app.evaluators.llm_judge_evaluator.httpx.AsyncClient") as mock_cls:
+        with patch("agentbench.evaluators.llm_judge_evaluator.httpx.AsyncClient") as mock_cls:
             mock_instance = AsyncMock()
             mock_instance.post = AsyncMock(side_effect=Exception("API error"))
             mock_instance.__aenter__ = AsyncMock(return_value=mock_instance)
@@ -2679,7 +2679,7 @@ import re
 
 import httpx
 
-from app.evaluators.base import BaseEvaluator, EvaluationResult
+from agentbench.evaluators.base import BaseEvaluator, EvaluationResult
 
 JUDGE_SYSTEM_PROMPT = """你是一个专业的 AI Agent 评测裁判。你的任务是评估 Agent 对用户问题的回答质量。
 
@@ -2843,16 +2843,16 @@ git commit -m "feat: add LLM-as-Judge evaluator with multi-dimension scoring"
 # D:\ai work\AgentBench\backend\tests\unit\services\test_evaluation_service.py
 import pytest
 from unittest.mock import patch, MagicMock
-from app.services.evaluation_service import EvaluationService
-from app.evaluators.rule_evaluator import RuleSpec
+from agentbench.services.evaluation_service import EvaluationService
+from agentbench.evaluators.rule_evaluator import RuleSpec
 
 
 class TestEvaluationService:
     @pytest.mark.asyncio
     async def test_evaluate_with_rules(self, db_session):
-        from app.models.test_case import TestCase
-        from app.models.agent_config import AgentConfig
-        from app.models.test_run import TestRun
+        from agentbench.models.test_case import TestCase
+        from agentbench.models.agent_config import AgentConfig
+        from agentbench.models.test_run import TestRun
 
         tc = TestCase(title="t", input_text="hi", expected_behavior="hello", scoring_criteria="", tags="[]")
         ac = AgentConfig(name="ac", agent_type="http", config="{}")
@@ -2872,7 +2872,7 @@ class TestEvaluationService:
 
     @pytest.mark.asyncio
     async def test_evaluate_without_rules_no_llm(self, db_session):
-        from app.models.test_run import TestRun
+        from agentbench.models.test_run import TestRun
         tr = TestRun(test_case_id=1, agent_config_id=1, status="success", agent_output="test")
         db_session.add(tr)
         await db_session.commit()
@@ -2893,13 +2893,13 @@ import json
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.test_case import TestCase
-from app.models.test_run import TestRun
-from app.models.run_step import RunStep
-from app.models.evaluation_result import EvaluationResult
-from app.evaluators.rule_evaluator import RuleEvaluator, RuleSpec
-from app.evaluators.llm_judge_evaluator import LLMJudgeEvaluator
-from app.config import settings
+from agentbench.models.test_case import TestCase
+from agentbench.models.test_run import TestRun
+from agentbench.models.run_step import RunStep
+from agentbench.models.evaluation_result import EvaluationResult
+from agentbench.evaluators.rule_evaluator import RuleEvaluator, RuleSpec
+from agentbench.evaluators.llm_judge_evaluator import LLMJudgeEvaluator
+from agentbench.config import settings
 
 
 class EvaluationService:
@@ -2959,7 +2959,7 @@ class EvaluationService:
 
         # 如果都没有，返回中性结果
         if best_result is None:
-            from app.evaluators.base import EvaluationResult as BaseResult
+            from agentbench.evaluators.base import EvaluationResult as BaseResult
             best_result = BaseResult(
                 judge_type="none", overall_score=0.0, passed=False,
                 reasoning="No evaluation method specified.",
@@ -2993,11 +2993,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_session
-from app.models.evaluation_result import EvaluationResult
-from app.schemas.evaluation import EvaluationResultResponse
-from app.services.evaluation_service import EvaluationService
-from app.evaluators.rule_evaluator import RuleSpec
+from agentbench.database import get_session
+from agentbench.models.evaluation_result import EvaluationResult
+from agentbench.schemas.evaluation import EvaluationResultResponse
+from agentbench.services.evaluation_service import EvaluationService
+from agentbench.evaluators.rule_evaluator import RuleSpec
 
 router = APIRouter(prefix="/api/evaluations", tags=["evaluations"])
 
@@ -3064,7 +3064,7 @@ async def get_evaluations_by_run(
 更新 `main.py`：
 
 ```python
-from app.routers import evaluations
+from agentbench.routers import evaluations
 app.include_router(evaluations.router)
 ```
 
@@ -3539,7 +3539,7 @@ git commit -m "test: add Vitest component tests for TraceTimeline and ScoreCard"
 
 - [ ] 所有后端测试通过：`pytest tests/ -v --cov`
 - [ ] 所有前端测试通过：`npx vitest run`
-- [ ] 后端服务可启动：`uvicorn app.main:app`
+- [ ] 后端服务可启动：`uvicorn agentbench.main:app`
 - [ ] 前端服务可启动：`npm run dev`
 - [ ] 端到端流程：创建用例 → 创建配置 → 运行测试 → 查看结果
 - [ ] Git 提交历史清晰，每个 Task 一个 commit

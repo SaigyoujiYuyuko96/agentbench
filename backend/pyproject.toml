@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [project.scripts]
-agentbench = "app.cli.main:main"
+agentbench = "agentbench.cli.main:main"
 
 [project.optional-dependencies]
 dev = [
@@ -36,7 +36,9 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["app*"]
+# 必须是带命名空间的包名。装成顶层 `app` 会覆盖使用者自己的 `app/` 包
+# （pip 解压时同名文件互相覆盖，卸载时把整个目录删掉）。
+include = ["agentbench*"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

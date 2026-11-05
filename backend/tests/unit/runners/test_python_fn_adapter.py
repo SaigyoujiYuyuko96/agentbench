@@ -1,5 +1,5 @@
 import pytest
-from app.runners.python_fn_adapter import PythonFnRunner, trace_step
+from agentbench.runners.python_fn_adapter import PythonFnRunner, trace_step
 
 class TestPythonFnRunner:
     @pytest.mark.asyncio

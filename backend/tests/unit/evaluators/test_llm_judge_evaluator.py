@@ -1,7 +1,7 @@
 import pytest
 import json
 from unittest.mock import AsyncMock, Mock, patch
-from app.evaluators.llm_judge_evaluator import LLMJudgeEvaluator
+from agentbench.evaluators.llm_judge_evaluator import LLMJudgeEvaluator
 
 FAKE_JUDGE_RESPONSE = json.dumps({
     "accuracy": 5,
@@ -20,7 +20,7 @@ class TestLLMJudgeEvaluator:
             model="gpt-4.1",
         )
 
-        with patch("app.evaluators.llm_judge_evaluator.httpx.AsyncClient") as mock_cls:
+        with patch("agentbench.evaluators.llm_judge_evaluator.httpx.AsyncClient") as mock_cls:
             mock_response = Mock()
             mock_response.json.return_value = {
                 "choices": [{"message": {"content": FAKE_JUDGE_RESPONSE}}],
@@ -52,7 +52,7 @@ class TestLLMJudgeEvaluator:
             base_url="http://fake", api_key="test", model="gpt-4.1",
         )
 
-        with patch("app.evaluators.llm_judge_evaluator.httpx.AsyncClient") as mock_cls:
+        with patch("agentbench.evaluators.llm_judge_evaluator.httpx.AsyncClient") as mock_cls:
             mock_instance = AsyncMock()
             mock_instance.post = AsyncMock(side_effect=Exception("API error"))
             mock_instance.__aenter__ = AsyncMock(return_value=mock_instance)

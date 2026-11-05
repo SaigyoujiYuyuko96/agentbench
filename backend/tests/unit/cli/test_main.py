@@ -1,6 +1,6 @@
 import pytest
 
-from app.cli.main import main
+from agentbench.cli.main import main
 
 
 SUITE = """
@@ -33,8 +33,8 @@ cases:
 @pytest.fixture
 def fake_runner(monkeypatch):
     """把关掉真的 adapter 查找，换成一个把输入原样回显的 runner。"""
-    from app.runners.base import AgentRunner, RunResult
-    import app.cli.runner as cli_runner
+    from agentbench.runners.base import AgentRunner, RunResult
+    import agentbench.cli.runner as cli_runner
 
     class Echo(AgentRunner):
         async def run(self, test_input):

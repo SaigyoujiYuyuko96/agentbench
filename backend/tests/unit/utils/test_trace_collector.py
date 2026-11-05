@@ -1,6 +1,6 @@
 import pytest
 import time
-from app.utils.trace_collector import TraceCollector
+from agentbench.utils.trace_collector import TraceCollector
 
 class TestTraceCollector:
     def test_record_step(self):

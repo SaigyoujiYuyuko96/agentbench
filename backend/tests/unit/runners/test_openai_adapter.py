@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
-from app.runners.openai_adapter import OpenAICompatibleRunner
+from agentbench.runners.openai_adapter import OpenAICompatibleRunner
 
 class TestOpenAICompatibleRunner:
     @pytest.mark.asyncio
@@ -16,7 +16,7 @@ class TestOpenAICompatibleRunner:
             "usage": {"prompt_tokens": 50, "completion_tokens": 100, "total_tokens": 150},
         }
 
-        with patch("app.runners.openai_adapter.httpx.AsyncClient") as mock_client_cls:
+        with patch("agentbench.runners.openai_adapter.httpx.AsyncClient") as mock_client_cls:
             mock_post = AsyncMock()
             mock_resp = Mock()
             mock_resp.json.return_value = mock_response
@@ -46,7 +46,7 @@ class TestOpenAICompatibleRunner:
             "api_key": "test-key",
         })
 
-        with patch("app.runners.openai_adapter.httpx.AsyncClient") as mock_client_cls:
+        with patch("agentbench.runners.openai_adapter.httpx.AsyncClient") as mock_client_cls:
             mock_post = AsyncMock()
             mock_resp = Mock()
             mock_resp.raise_for_status.side_effect = Exception("API Error")

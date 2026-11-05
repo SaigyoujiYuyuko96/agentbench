@@ -1,7 +1,7 @@
-from app.cli.runner import run_suite
-from app.cli.suite import Case, Suite
-from app.evaluators.rule_evaluator import RuleSpec
-from app.runners.base import AgentRunner, RunResult
+from agentbench.cli.runner import run_suite
+from agentbench.cli.suite import Case, Suite
+from agentbench.evaluators.rule_evaluator import RuleSpec
+from agentbench.runners.base import AgentRunner, RunResult
 
 
 class FakeRunner(AgentRunner):
