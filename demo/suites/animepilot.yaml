@@ -5,6 +5,11 @@
 #   agentbench run ../demo/suites/animepilot.yaml
 #
 # Swap `agent:` for your own endpoint and the rest of the file keeps working.
+#
+# Note what the rules assert: facts that only a real answer carries (the
+# studio, the author, the year). None of them appear in the question, so an
+# agent that just echoes the input scores zero. `tests/unit/cli/test_demo_suite.py`
+# holds that property in place.
 
 agent:
   type: http
@@ -19,23 +24,29 @@ cases:
     title: 搜索葬送的芙莉莲
     input: 帮我找葬送的芙莉莲
     rules:
-      - keyword_contains: 芙莉莲
+      # 动画制作公司，问题里没有提到
+      - keyword_contains: MADHOUSE
+      # 原作漫画作者，答案里才有
+      - keyword_contains: 山田钟人
 
   - id: natsume
     title: 搜索夏目友人帐
     input: 有没有类似夏目友人帐的动画
     rules:
-      - keyword_contains: 夏目
+      - keyword_contains: 绿川幸
+      - keyword_not_contains: 不知道
 
   - id: kyoani
     title: 京阿尼代表作
     input: 京阿尼有哪些代表作
     rules:
-      - regex_match: 京阿尼|京都动画
+      - regex_match: 凉宫春日|紫罗兰永恒花园|冰菓
       - keyword_not_contains: 不知道
 
   - id: mushishi
     title: 虫师的评价
-    input: 虫师这部动画怎么样
+    # 用 mock 认识的那句话；换个问法会落进通用回退分支，测的就不是知识了
+    input: 虫师为什么评价高
     rules:
-      - keyword_contains: 虫师
+      - keyword_contains: 漆原友纪
+      - keyword_contains: 浮世绘
