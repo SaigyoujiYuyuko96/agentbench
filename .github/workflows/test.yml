@@ -108,6 +108,29 @@ jobs:
             exit 1
           fi
           echo "failing suite correctly exited 1"
+      - name: Prove a broken suite exits 2, not 1
+        # 2 is the only code that says "your config is wrong". Without this
+        # step, a suite that cannot even be read would silently look like the
+        # agent had regressed.
+        shell: bash
+        run: |
+          printf 'agent:\n  type: http\n  \xff: v\n' > "$RUNNER_TEMP/gbk.yaml"
+
+          set +e
+          PYTHONIOENCODING=utf-8 agentbench run "$RUNNER_TEMP/gbk.yaml" 2>"$RUNNER_TEMP/err.txt"
+          code=$?
+          set -e
+
+          if [ "$code" -ne 2 ]; then
+            echo "expected exit 2 for an unreadable suite, got $code"
+            exit 1
+          fi
+          grep -q UTF-8 "$RUNNER_TEMP/err.txt" || {
+            echo "the error should say what is wrong with the file"
+            cat "$RUNNER_TEMP/err.txt"
+            exit 1
+          }
+          echo "unreadable suite correctly exited 2"
       - name: Upload the report
         if: always()
         uses: actions/upload-artifact@v4
