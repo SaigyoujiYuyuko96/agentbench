@@ -51,7 +51,7 @@ async def _run(args: argparse.Namespace) -> int:
     try:
         suite = load_suite(suite_path)
     except SuiteFileError as exc:
-        print(f"agentbench: {exc}", file=sys.stderr)
+        _write(f"agentbench: {exc}", stream=sys.stderr)
         return EXIT_BAD_SUITE
 
     # run_suite 自己挑 adapter，这里不用再解析一遍。
@@ -59,13 +59,38 @@ async def _run(args: argparse.Namespace) -> int:
 
     report = render_markdown(outcomes, suite_name=suite_path.stem)
     if args.report:
-        report_path = Path(args.report)
-        report_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text(report + "\n", encoding="utf-8")
+        try:
+            _write_report(Path(args.report), report)
+        except OSError as exc:
+            # 用例可能全过了，但报告写不出去；退出码若给 1，CI 会去怪 Agent，
+            # 而真正的问题是这个路径。所以走 2。
+            _write(f"agentbench: cannot write the report: {exc}", stream=sys.stderr)
+            return EXIT_BAD_SUITE
 
-    print(summarize(outcomes) if args.quiet else report)
+    _write(summarize(outcomes) if args.quiet else report)
 
     return EXIT_OK if all(o.passed for o in outcomes) else EXIT_CASES_FAILED
+
+
+def _write_report(path: Path, report: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(report + "\n", encoding="utf-8")
+
+
+def _write(text: str, *, stream=None) -> None:
+    """往控制台写，编不了就替换，绝不因为一个表情符号改变退出码。
+
+    中文 Windows 的控制台是 GBK。Agent 的答案里出现 emoji 时，`print` 会抛
+    UnicodeEncodeError —— 一个 1/1 全过的 suite 因此以退出码 1 结束，CI 报
+    「用例失败」，而失败的是编码。
+    """
+    stream = stream if stream is not None else sys.stdout
+    encoding = getattr(stream, "encoding", None) or "utf-8"
+    try:
+        text.encode(encoding)
+    except (UnicodeEncodeError, LookupError):
+        text = text.encode(encoding, "replace").decode(encoding, "replace")
+    print(text, file=stream)
 
 
 if __name__ == "__main__":

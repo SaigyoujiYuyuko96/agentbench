@@ -76,6 +76,80 @@ class TestExitCodes:
         assert code == 2
         assert "not found" in capsys.readouterr().err.lower()
 
+    def test_exits_two_when_the_file_is_not_utf8(self, tmp_path, capsys):
+        # A suite saved by a Chinese Windows editor is GBK. Letting the
+        # UnicodeDecodeError escape gives exit 1, which means "cases failed" —
+        # a lie, since nothing ran.
+        suite = tmp_path / "gbk.yaml"
+        suite.write_bytes("agent:\n  type: http\n  名字: 值\n".encode("gbk"))
+
+        code = main(["run", str(suite)])
+
+        assert code == 2
+        assert "UTF-8" in capsys.readouterr().err
+
+    def test_exits_two_when_given_a_directory(self, tmp_path, capsys):
+        code = main(["run", str(tmp_path)])
+
+        assert code == 2
+        assert "directory" in capsys.readouterr().err.lower()
+
+    def test_exits_two_when_the_report_cannot_be_written(self, tmp_path, fake_runner, capsys):
+        # The cases all passed, but CI would see exit 1 and blame the agent.
+        # Blame the path instead.
+        suite = tmp_path / "suite.yaml"
+        suite.write_text(SUITE, encoding="utf-8")
+        blocker = tmp_path / "blocked"
+        blocker.write_text("not a directory", encoding="utf-8")
+
+        code = main(["run", str(suite), "--report", str(blocker / "report.md")])
+
+        assert code == 2
+        assert "report" in capsys.readouterr().err.lower()
+
+
+class TestConsoleEncoding:
+    def test_a_passing_suite_still_exits_zero_on_a_gbk_console(
+        self, tmp_path, monkeypatch
+    ):
+        # Windows cmd is GBK. An answer containing an emoji used to make print()
+        # raise UnicodeEncodeError, turning a 1/1 pass into exit 1.
+        from agentbench.runners.base import AgentRunner, RunResult
+        import agentbench.cli.runner as cli_runner
+
+        class Emoji(AgentRunner):
+            async def run(self, test_input):
+                return RunResult(output=f"{test_input} 😀 通过")
+
+        monkeypatch.setitem(cli_runner.ADAPTER_MAP, "http", Emoji)
+        monkeypatch.setattr("sys.stdout", _GbkConsole())
+        suite = tmp_path / "suite.yaml"
+        suite.write_text(SUITE, encoding="utf-8")
+
+        code = main(["run", str(suite)])
+
+        assert code == 0
+
+
+class _GbkConsole:
+    """sys.stdout 的替身：写进去的每个字符都必须能被 GBK 编码。
+
+    和 Windows 中文控制台一样，编不了就抛 UnicodeEncodeError。真实终端上这
+    个异常会从 print() 冒出来，把退出码从 0 变成 1。
+    """
+
+    encoding = "gbk"
+    _buffer = ""
+
+    def write(self, text):
+        if not isinstance(text, str):
+            raise TypeError(f"expected str, got {type(text).__name__}")
+        text.encode("gbk")
+        self._buffer += text
+
+    def flush(self):
+        pass
+
 
 class TestReportOutput:
     def test_writes_the_report_to_the_requested_path(self, tmp_path, fake_runner):
