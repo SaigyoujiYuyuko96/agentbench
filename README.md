@@ -293,22 +293,31 @@ agentbench run path/to/your-suite.yaml
 
 仓库自带一个能立刻跑的：`cd backend && agentbench run ../demo/suites/animepilot.yaml`（需要 `demo/mock_animepilot.py` 在跑，见快速开始）。
 
-输出直接就是 markdown，粘进 PR 评论或 `$GITHUB_STEP_SUMMARY` 都能用：
+输出直接就是 markdown，粘进 PR 评论或 `$GITHUB_STEP_SUMMARY` 都能用。
+下面是同一份 suite 遇到一个在某条用例上退化了的 Agent 时的样子（`mushishi` 那条答了「没找到」，
+所以总分掉到 4.0，退出码为 1）：
 
 ```markdown
 ## AgentBench — animepilot
 
-**4/4 cases passed · average 5.0/5.0**
+**3/4 cases passed · average 4.0/5.0**
 
 | | Case | Score | Time | Agent output |
 |---|---|---|---|---|
-| PASS | frieren — 搜索葬送的芙莉莲 | 5.0 | 128ms | 《葬送的芙莉莲》…… |
-| FAIL | natsume — 搜索夏目友人帐 | 1.0 | 96ms | 抱歉，我没有找到相关作品。 |
+| PASS | frieren — 搜索葬送的芙莉莲 | 5.0 | 671ms | 《葬送的芙莉莲》（葬送のフリーレン）是山田钟人原作…… |
+| PASS | natsume — 搜索夏目友人帐 | 5.0 | 797ms | 《夏目友人帐》（夏目友人帳）是绿川幸创作的日本治愈系漫画…… |
+| PASS | kyoani — 京阿尼代表作 | 5.0 | 780ms | 京都动画（Kyoto Animation），简称「京阿尼」…… |
+| FAIL | mushishi — 虫师的评价 | 1.0 | 609ms | 抱歉，我没有找到相关作品。 |
+
+### Failures
+
+- **mushishi** — 0/2 rules passed.
+  - asked: 虫师为什么评价高
 ```
 
-标记用 `PASS` / `FAIL` 而不是 ✅ / ❌：Windows 的 GBK 控制台编不出那些符号，`print` 会抛 `UnicodeEncodeError`，退出码就从约定的 0/1/2 变成一屏 traceback。
+标记用 `PASS` / `FAIL` 而不是 ✅ / ❌：Windows 的 GBK 控制台编不出那些符号。报告内容本身还有一层兜底——`print` 前会先试编码，编不了就把那个字符换成 `?`，所以 Agent 的答案里出现 emoji 也不会让一个 1/1 全过的 suite 以退出码 1 结束。
 
-退出码：`0` 全过、`1` 有用例没过、`2` suite 文件本身有问题。第三种和第二种分开，是因为「你的 CI 配置写错了」和「你的 Agent 退化了」要分别处理。
+退出码：`0` 全过、`1` 有用例没过、`2` suite 文件本身没法用。第三种和第二种分开，是因为「你的 CI 配置写错了」和「你的 Agent 退化了」要分别处理。归到 `2` 的具体情形：文件不存在、不是 UTF-8（中文 Windows 编辑器默认存 GBK）、路径指到目录、YAML 解析不了、缺字段、`id` 重复、`rules` 为空、未知的 `agent.type`、非法正则、引用了未导出的环境变量、`--report` 写不出去。
 
 ### suite 文件长什么样
 
@@ -318,6 +327,8 @@ agentbench run path/to/your-suite.yaml
 agent:
   type: http
   endpoint: https://your-agent.example.com/chat
+  headers:
+    Authorization: Bearer ${MY_AGENT_TOKEN}    # 从环境变量取，见下
   request_body_template:
     content: "{input}"
   output_field: answer
@@ -328,7 +339,9 @@ cases:
     title: 用户要求退款
     input: 我要退货，订单 12345
     rules:
-      - keyword_contains: 退货
+      # 不写 `keyword_contains: 退货` —— 那三个字就在问题里，一个把问题
+      # 复读一遍的 Agent 也能过。断言要落在答案才有的东西上。
+      - keyword_contains: 已受理
       - keyword_not_contains: 无法处理
 
   - id: refund-policy
@@ -339,6 +352,32 @@ cases:
 ```
 
 `id` 是报告里的行标识，必须唯一；`rules` 至少一条——没有规则的用例永远不会失败，那等于没测。
+
+**断言词不要在输入里出现。** 这条比格式更重要：`keyword_contains` 匹配的是「答案里有没有这个词」，如果那个词本来就是用户问的，那么任何回显输入的实现都能拿满分，测出来的 5.0 什么也不证明。仓库自带的那份 demo suite 有测试守着这条规矩——`tests/unit/cli/test_demo_suite.py` 会拿一个只复读问题的假 Agent 跑一遍，断言它一条都过不了。
+
+### 密钥：从环境变量取，不要写进文件
+
+suite 文件是要进仓库的，所以它不能存 token。用 `${NAME}` 引用环境变量：
+
+```yaml
+agent:
+  type: http
+  endpoint: https://your-agent.example.com/chat
+  headers:
+    Authorization: Bearer ${MY_AGENT_TOKEN}
+```
+
+CI 里把 secret 导进去即可：
+
+```yaml
+- run: agentbench run ./suite.yaml
+  env:
+    MY_AGENT_TOKEN: ${{ secrets.MY_AGENT_TOKEN }}
+```
+
+变量没设时**立刻以退出码 2 失败**并指出是哪个变量。让 `${MY_AGENT_TOKEN}` 原样发出去，会变成三层之外的一个 401，比在这里停住难查得多。想写一个字面的 `${`，用 `$$` 转义。
+
+替换只发生在 `agent:` 段——那是唯一该出现密钥的地方。`cases:` 里写 `${...}` 不会被替换。
 
 ### 接到 GitHub Actions
 
@@ -409,7 +448,7 @@ GET    /api/evaluations/run/{run_id} 某次运行的全部评分
 ## 测试
 
 ```bash
-cd backend && pytest -q          # 93 passed
+cd backend && pytest -q          # 103 passed
 cd frontend && npm test          # 8 passed
 cd frontend && npm run build     # vue-tsc + vite build
 ```
@@ -421,7 +460,7 @@ cd frontend && npm run build     # vue-tsc + vite build
 | `tests/unit/runners/` | 4 个文件 | 四种适配器的成功/失败/超时路径 |
 | `tests/unit/evaluators/` | 2 个文件 | 规则打分边界、LLM 响应三层解析兜底 |
 | `tests/unit/services/` | 4 个文件 | 用例 CRUD、配置 CRUD、运行编排、评分流程 |
-| `tests/unit/cli/` | 4 个文件 | suite 文件解析与其错误、逐用例编排、报告渲染、退出码 |
+| `tests/unit/cli/` | 5 个文件 | suite 文件解析与其错误（含 `${ENV}` 插值、非 UTF-8、目录）、逐用例编排、报告渲染、退出码、demo suite 挡得住复读机 |
 | `tests/unit/utils/` | 1 个文件 | TraceCollector 的序列号、token 累加、耗时 |
 | `tests/integration/` | 3 个文件 | 三个路由组的端到端 |
 | `frontend/src/components/__tests__/` | 2 个文件 | TraceTimeline、ScoreCard 渲染 |
@@ -439,7 +478,8 @@ cd frontend && npm run build     # vue-tsc + vite build
 - **没有打包成 GitHub Action。** 目前是「一个你能在任意 CI 里调用的命令行」，没有 `uses: SaigyoujiYuyuko96/agentbench@v1` 这种形态，也就没法自动往 PR 上粘评论。
 - **`langgraph` 和 `python_fn` 两种 runner 只能从代码里用。** 它们的 config 需要传 Python 对象，JSON 存不下，所以前端「新建 Agent 配置」页面对这两种类型实际上用不了。suite 文件同理，YAML 也表达不了 Python 对象。
 - **LLM Judge 的可靠性没有校准。** 没有人工标注集，没有和人类评分的一致性（Cohen's kappa）测量。这是已知的、也是最值得补的一块。
-- **SQLite。** 没有迁移（无 Alembic），表结构靠 `create_all`。
+- **规则评分只能查「答案里有没有这个词」。** 它不懂语义，所以断言词必须选得准：`keyword_contains: 退货` 这种写法，一个复读问题的 Agent 也能过。这是规则评分的固有短板，不是 bug——需要判断力的时候用 LLM Judge（Web 界面）。
+- **SQLite。** 没有迁移（无 Alembic），表结构靠 `create_all`。测试用的是**文件库** `test_agentbench.db`，多个 pytest 进程同时跑会互相踩（`OperationalError` / `no such table`）；单独跑或串行跑是稳的。
 - **中文界面。** 无 i18n。
 
 ---
@@ -458,7 +498,7 @@ agentbench/
 │   │   ├── schemas/         Pydantic 请求/响应
 │   │   ├── services/        业务编排
 │   │   └── utils/           TraceCollector
-│   └── tests/               93 个测试
+│   └── tests/               103 个测试
 ├── frontend/
 │   └── src/
 │       ├── api/             接口封装
