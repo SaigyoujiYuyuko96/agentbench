@@ -101,6 +101,55 @@ class TestLoadSuite:
             load_suite(path)
 
 
+class TestEnvironmentInterpolation:
+    def test_substitutes_environment_variables_in_the_agent_config(self, tmp_path, monkeypatch):
+        # A suite that lives in a repo cannot hold a token. CI exports it.
+        monkeypatch.setenv("MY_API_TOKEN", "s3cret")
+        path = tmp_path / "suite.yaml"
+        path.write_text(
+            "agent:\n  type: http\n  endpoint: http://x\n"
+            "  headers:\n    Authorization: Bearer ${MY_API_TOKEN}\n"
+            "cases:\n"
+            "  - id: a\n    title: t\n    input: i\n    rules:\n      - keyword_contains: x\n",
+            encoding="utf-8",
+        )
+
+        suite = load_suite(path)
+
+        assert suite.agent_config["headers"]["Authorization"] == "Bearer s3cret"
+
+    def test_names_the_missing_variable_instead_of_sending_the_literal(self, tmp_path, monkeypatch):
+        # Sending "${MY_API_TOKEN}" to a server fails as a 401 three layers away
+        # from the typo. Fail here, where the file is being read.
+        monkeypatch.delenv("MY_API_TOKEN", raising=False)
+        path = tmp_path / "suite.yaml"
+        path.write_text(
+            "agent:\n  type: http\n  endpoint: http://x\n"
+            "  headers:\n    Authorization: Bearer ${MY_API_TOKEN}\n"
+            "cases:\n"
+            "  - id: a\n    title: t\n    input: i\n    rules:\n      - keyword_contains: x\n",
+            encoding="utf-8",
+        )
+
+        with pytest.raises(SuiteFileError, match="MY_API_TOKEN"):
+            load_suite(path)
+
+    def test_a_doubled_dollar_stays_a_literal_dollar(self, tmp_path):
+        # Without an escape there is no way to put a real `${` in a header.
+        path = tmp_path / "suite.yaml"
+        path.write_text(
+            "agent:\n  type: http\n  endpoint: http://x\n"
+            "  headers:\n    X-Note: $${not_a_var}\n"
+            "cases:\n"
+            "  - id: a\n    title: t\n    input: i\n    rules:\n      - keyword_contains: x\n",
+            encoding="utf-8",
+        )
+
+        suite = load_suite(path)
+
+        assert suite.agent_config["headers"]["X-Note"] == "${not_a_var}"
+
+
 class TestStaysOffTheDatabase:
     def test_importing_the_cli_does_not_pull_in_sqlalchemy(self):
         # The README promises the CLI needs no database. Importing ADAPTER_MAP
